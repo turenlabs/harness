@@ -1,6 +1,6 @@
 # Claude Code Harness
 
-A professional Tauri 2.0 desktop application for managing multiple Claude Code terminal instances simultaneously.
+A Tauri 2.0 desktop application for managing multiple Claude Code terminal instances simultaneously.
 
 ## Features
 
