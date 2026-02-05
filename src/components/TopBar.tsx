@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, LayoutGrid, Terminal as TerminalIcon, Radio, Settings2 } from "lucide-react";
+import { Plus, LayoutGrid, Terminal as TerminalIcon, Radio, Settings2, ArrowUpCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { useTerminalStore } from "@/stores/terminal-store";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { EnvPanel } from "./EnvPanel";
 
 export function TopBar() {
-  const { addTerminal, terminals, layout, broadcastMode, toggleBroadcastMode, getVisibleTerminals } = useTerminalStore();
+  const { addTerminal, addUpgradeTerminal, terminals, layout, broadcastMode, toggleBroadcastMode, getVisibleTerminals } = useTerminalStore();
   const { envVars } = useEnvStore();
   const [envPanelOpen, setEnvPanelOpen] = useState(false);
   const visibleCount = getVisibleTerminals().length;
@@ -75,6 +75,16 @@ export function TopBar() {
               {envVarCount}
             </Badge>
           )}
+        </Button>
+
+        <Button
+          onClick={addUpgradeTerminal}
+          size="sm"
+          variant="outline"
+          className="gap-2"
+        >
+          <ArrowUpCircle className="h-4 w-4" />
+          Upgrade Claude
         </Button>
 
         <Button onClick={handleNewTerminal} size="sm">

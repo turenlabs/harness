@@ -33,9 +33,13 @@ export function useTerminal({ terminalId, cwd, containerRef, onReady }: UseTermi
     return buffer.viewportY >= buffer.baseY - 3;
   }, []);
 
+  // Get the terminal to access the custom command if any
+  const terminal = useTerminalStore((state) => state.terminals.get(terminalId));
+
   const { spawn, write, resize, kill } = usePty({
     terminalId,
     cwd,
+    command: terminal?.command,
     onData: (data) => {
       const wasAtBottom = isAtBottom();
       terminalRef.current?.write(data);

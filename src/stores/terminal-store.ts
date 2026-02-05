@@ -28,6 +28,7 @@ interface TerminalState {
 
   // Terminal actions
   addTerminal: (cwd?: string, groupId?: string) => string;
+  addUpgradeTerminal: () => string;
   removeTerminal: (id: string) => void;
   setActive: (id: string | null) => void;
   updateStatus: (id: string, status: TerminalStatus) => void;
@@ -117,6 +118,38 @@ export const useTerminalStore = create<TerminalState>((set, get) => ({
     });
 
     setTimeout(() => get().persistSessions(), 100);
+    return id;
+  },
+
+  addUpgradeTerminal: () => {
+    const id = generateId();
+    const effectiveGroupId = get().activeGroupId || DEFAULT_GROUP_ID;
+
+    const terminal: Terminal = {
+      id,
+      status: "starting",
+      title: "Upgrading Claude Code...",
+      color: "cyan",
+      command: "claude update",
+      createdAt: new Date(),
+      outputHistory: [],
+      groupId: effectiveGroupId,
+    };
+
+    set((state) => {
+      const newTerminals = new Map(state.terminals);
+      newTerminals.set(id, terminal);
+      const visibleCount = state.activeGroupId === null
+        ? newTerminals.size
+        : Array.from(newTerminals.values()).filter(t => t.groupId === state.activeGroupId).length;
+      const layout = calculateLayout(visibleCount);
+      return {
+        terminals: newTerminals,
+        activeId: id,
+        layout,
+      };
+    });
+
     return id;
   },
 
