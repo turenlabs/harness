@@ -1,5 +1,7 @@
 # Claude Code Harness
 
+<img width="1398" height="898" alt="image" src="https://github.com/user-attachments/assets/48a02c81-0d34-44bf-a528-63c3bbb4b204" />
+
 A Tauri 2.0 desktop application for managing multiple Claude Code terminal instances simultaneously.
 
 ## Features
