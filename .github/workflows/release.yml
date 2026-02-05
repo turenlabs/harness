@@ -7,76 +7,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-macos:
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        target: [aarch64-apple-darwin, x86_64-apple-darwin]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Tauri app
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          args: --target ${{ matrix.target }}
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: macos-${{ matrix.target }}
-          path: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            src-tauri/target/${{ matrix.target }}/release/bundle/macos/*.app
-
-  create-release:
-    needs: build-macos
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: List artifacts
-        run: find artifacts -type f -name "*.dmg" -o -name "*.app"
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          draft: true
-          generate_release_notes: true
-          files: |
-            artifacts/**/*.dmg
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # Universal binary build (combines Intel + Apple Silicon)
   build-universal:
     runs-on: macos-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Update version in tauri.conf.json
+        run: |
+          sed -i '' 's/"version": "[^"]*"/"version": "${{ steps.version.outputs.version }}"/' src-tauri/tauri.conf.json
+          cat src-tauri/tauri.conf.json | grep version
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -102,13 +50,11 @@ jobs:
         run: |
           mkdir -p src-tauri/target/universal-apple-darwin/release/bundle/macos
 
-          # Create universal binary using lipo
           lipo -create \
             src-tauri/target/aarch64-apple-darwin/release/Harness \
             src-tauri/target/x86_64-apple-darwin/release/Harness \
             -output src-tauri/target/universal-apple-darwin/release/Harness
 
-          # Copy the .app bundle from one architecture and replace the binary
           cp -R src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Harness.app \
             src-tauri/target/universal-apple-darwin/release/bundle/macos/
 
@@ -117,7 +63,6 @@ jobs:
 
       - name: Create universal DMG
         run: |
-          # Install create-dmg
           brew install create-dmg
 
           mkdir -p src-tauri/target/universal-apple-darwin/release/bundle/dmg
@@ -130,20 +75,21 @@ jobs:
             --icon "Harness.app" 180 170 \
             --hide-extension "Harness.app" \
             --app-drop-link 480 170 \
-            "src-tauri/target/universal-apple-darwin/release/bundle/dmg/Harness_universal.dmg" \
+            "src-tauri/target/universal-apple-darwin/release/bundle/dmg/Harness_${{ steps.version.outputs.version }}_universal.dmg" \
             "src-tauri/target/universal-apple-darwin/release/bundle/macos/Harness.app"
 
-      - name: Upload universal DMG
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: macos-universal
+          name: Harness-${{ steps.version.outputs.version }}-universal
           path: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
 
-      - name: Upload to release
+      - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           draft: true
+          generate_release_notes: true
           files: src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
