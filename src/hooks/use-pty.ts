@@ -12,6 +12,7 @@ import {
 interface UsePtyOptions {
   terminalId: string;
   cwd?: string;
+  command?: string; // Custom command to run instead of claude
   onData?: (data: string) => void;
   onExit?: () => void;
 }
@@ -19,6 +20,7 @@ interface UsePtyOptions {
 export function usePty({
   terminalId,
   cwd,
+  command,
   onData: onDataCallback,
   onExit,
 }: UsePtyOptions) {
@@ -63,11 +65,12 @@ export function usePty({
     }
 
     try {
-      console.log("Spawning PTY for terminal:", terminalId, "cwd:", cwd);
+      const effectiveCommand = command || "claude --dangerously-skip-permissions";
+      console.log("Spawning PTY for terminal:", terminalId, "cwd:", cwd, "command:", effectiveCommand);
 
       await getOrCreatePty(terminalId, {
         cwd,
-        args: ["-l", "-c", "claude --dangerously-skip-permissions"],
+        args: ["-l", "-c", effectiveCommand],
         onData: handleData,
         onExit: handleExit,
       });
@@ -79,7 +82,7 @@ export function usePty({
       console.error("Failed to spawn PTY:", error);
       updateStatus(terminalId, "error");
     }
-  }, [terminalId, cwd, updateStatus, handleData, handleExit]);
+  }, [terminalId, cwd, command, updateStatus, handleData, handleExit]);
 
   const write = useCallback(
     (data: string) => {

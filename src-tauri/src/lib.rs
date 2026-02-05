@@ -19,6 +19,17 @@ fn get_environment() -> HashMap<String, String> {
         env.insert("LANG".to_string(), "en_US.UTF-8".to_string());
     }
 
+    // Prepend common user bin paths to PATH (for claude CLI, etc.)
+    if let Some(home) = env.get("HOME").cloned() {
+        let user_paths = vec![
+            format!("{}/.local/bin", home),
+            format!("{}/bin", home),
+        ];
+        let current_path = env.get("PATH").cloned().unwrap_or_default();
+        let new_path = format!("{}:{}", user_paths.join(":"), current_path);
+        env.insert("PATH".to_string(), new_path);
+    }
+
     env
 }
 

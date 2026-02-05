@@ -8,6 +8,7 @@ export interface Terminal {
   title: string;
   color: TerminalColor;
   cwd?: string;
+  command?: string; // Custom command to run instead of claude
   createdAt: Date;
   outputHistory: string[];
   groupId: string; // Group this terminal belongs to
